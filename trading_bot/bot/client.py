@@ -29,52 +29,45 @@ class BinanceFuturesClient:
         params["signature"] = signature
         return params
 
+    def _request(self, method: str, path: str, params: dict) -> dict:
+        safe_params = {k: v for k, v in params.items() if k != "signature"}
+        logger.debug("%s %s | params=%s", method.upper(), path, safe_params)
+        url = BASE_URL + path
+        try:
+            if method.upper() == "GET":
+                resp = self.session.get(url, params=params, timeout=10)
+            else:
+                resp = self.session.post(url, data=params, timeout=10)
+            resp.raise_for_status()
+            data = resp.json()
+            logger.debug("Response: %s", data)
+            return data
+        except requests.exceptions.HTTPError as exc:
+            body = exc.response.text if exc.response is not None else "no body"
+            logger.error("HTTP %s on %s %s | %s", exc.response.status_code, method.upper(), path, body)
+            raise
+        except requests.exceptions.RequestException as exc:
+            logger.error("Network error on %s %s | %s", method.upper(), path, exc)
+            raise
+
     def _get(self, path: str, params: dict = None, signed: bool = False) -> dict:
         params = params or {}
         if signed:
             params = self._sign(params)
-        url = BASE_URL + path
-        safe_params = {k: v for k, v in params.items() if k != "signature"}
-        logger.debug("GET %s | params=%s", path, safe_params)
-        try:
-            resp = self.session.get(url, params=params, timeout=10)
-            resp.raise_for_status()
-            data = resp.json()
-            logger.debug("Response: %s", data)
-            return data
-        except requests.exceptions.HTTPError as exc:
-            body = exc.response.text if exc.response is not None else "no body"
-            logger.error("HTTP %s on GET %s | %s", exc.response.status_code, path, body)
-            raise
-        except requests.exceptions.RequestException as exc:
-            logger.error("Network error on GET %s | %s", path, exc)
-            raise
+        return self._request("GET", path, params)
 
-    def _post(self, path: str, params: dict = None) -> dict:
+    def _post(self, path: str, params: dict = None, signed: bool = True) -> dict:
         params = params or {}
-        params = self._sign(params)
-        url = BASE_URL + path
-        safe_params = {k: v for k, v in params.items() if k != "signature"}
-        logger.debug("POST %s | params=%s", path, safe_params)
-        try:
-            resp = self.session.post(url, data=params, timeout=10)
-            resp.raise_for_status()
-            data = resp.json()
-            logger.debug("Response: %s", data)
-            return data
-        except requests.exceptions.HTTPError as exc:
-            body = exc.response.text if exc.response is not None else "no body"
-            logger.error("HTTP %s on POST %s | %s", exc.response.status_code, path, body)
-            raise
-        except requests.exceptions.RequestException as exc:
-            logger.error("Network error on POST %s | %s", path, exc)
-            raise
+        if signed:
+            params = self._sign(params)
+        return self._request("POST", path, params)
 
     def ping(self) -> bool:
         try:
             self._get("/fapi/v1/ping")
             return True
-        except Exception:
+        except Exception as exc:
+            logger.debug("ping failed: %s", exc)
             return False
 
     def get_server_time(self) -> int:

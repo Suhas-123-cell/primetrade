@@ -1,7 +1,6 @@
 import re
 
 VALID_SIDES = {"BUY", "SELL"}
-VALID_ORDER_TYPES = {"MARKET", "LIMIT", "STOP_LIMIT"}
 
 
 def validate_symbol(symbol: str) -> str:
@@ -20,16 +19,7 @@ def validate_side(side: str) -> str:
     return side
 
 
-def validate_order_type(order_type: str) -> str:
-    order_type = order_type.strip().upper()
-    if order_type not in VALID_ORDER_TYPES:
-        raise ValueError(
-            f"Invalid order type '{order_type}'. Must be one of: {', '.join(sorted(VALID_ORDER_TYPES))}."
-        )
-    return order_type
-
-
-def validate_quantity(quantity) -> float:
+def validate_quantity(quantity: str | float | int) -> float:
     try:
         qty = float(quantity)
     except (TypeError, ValueError):
@@ -37,6 +27,17 @@ def validate_quantity(quantity) -> float:
     if qty <= 0:
         raise ValueError(f"Quantity must be positive, got {qty}.")
     return qty
+
+
+def validate_stop_limit_prices(side: str, price: float, stop_price: float) -> None:
+    if side == "SELL" and not stop_price > price:
+        raise ValueError(
+            f"For SELL stop-limit, stop price ({stop_price}) must be above limit price ({price})."
+        )
+    if side == "BUY" and not stop_price < price:
+        raise ValueError(
+            f"For BUY stop-limit, stop price ({stop_price}) must be below limit price ({price})."
+        )
 
 
 def validate_price(price, required: bool = True) -> float | None:

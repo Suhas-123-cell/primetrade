@@ -1,6 +1,7 @@
 import logging
 import os
 from datetime import datetime
+from logging import handlers
 
 
 def setup_logging(log_dir: str = "logs") -> str:
@@ -12,7 +13,7 @@ def setup_logging(log_dir: str = "logs") -> str:
         datefmt="%Y-%m-%d %H:%M:%S",
     )
 
-    file_handler = logging.FileHandler(log_file)
+    file_handler = handlers.RotatingFileHandler(log_file, maxBytes=5*1024*1024, backupCount=3)
     file_handler.setFormatter(formatter)
     file_handler.setLevel(logging.DEBUG)
 
