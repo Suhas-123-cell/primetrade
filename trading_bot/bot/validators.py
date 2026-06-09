@@ -6,9 +6,9 @@ VALID_ORDER_TYPES = {"MARKET", "LIMIT", "STOP_LIMIT"}
 
 def validate_symbol(symbol: str) -> str:
     symbol = symbol.strip().upper()
-    if not re.match(r"^[A-Z]{4,20}$", symbol):
+    if not re.match(r"^[A-Z0-9]{4,20}$", symbol):
         raise ValueError(
-            f"Invalid symbol '{symbol}'. Expected uppercase letters only (e.g. BTCUSDT)."
+            f"Invalid symbol '{symbol}'. Must be 4-20 alphanumeric characters (e.g. BTCUSDT)."
         )
     return symbol
 
